@@ -662,10 +662,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b1b4b6ff7e09fd41a2c2e39cd6fe8f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  faction: 0
+  health: 10
   speed: 2
   attackPower: 0
-  health: 0
   dectionRange: 5
+  attackRange: 1
 --- !u!195 &367142410
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -1284,10 +1286,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b1b4b6ff7e09fd41a2c2e39cd6fe8f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  faction: 0
+  health: 10
   speed: 5
   attackPower: 0
-  health: 0
   dectionRange: 5
+  attackRange: 0
 --- !u!195 &872317316
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -2229,10 +2233,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b1b4b6ff7e09fd41a2c2e39cd6fe8f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  faction: 0
+  health: 10
   speed: 9
   attackPower: 0
-  health: 0
   dectionRange: 5
+  attackRange: 0
 --- !u!195 &1319920759
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -2468,9 +2474,9 @@ GameObject:
   - component: {fileID: 1586530881}
   - component: {fileID: 1586530880}
   - component: {fileID: 1586530886}
+  - component: {fileID: 1586530887}
   - component: {fileID: 1586530885}
   - component: {fileID: 1586530884}
-  - component: {fileID: 1586530887}
   m_Layer: 0
   m_Name: Enemy 1
   m_TagString: Unit
@@ -2588,10 +2594,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b1b4b6ff7e09fd41a2c2e39cd6fe8f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 1
-  attackPower: 0
-  health: 0
+  faction: 1
+  health: 10
+  speed: 3
+  attackPower: 2
   dectionRange: 6
+  attackRange: 1
 --- !u!195 &1586530886
 NavMeshAgent:
   m_ObjectHideFlags: 0

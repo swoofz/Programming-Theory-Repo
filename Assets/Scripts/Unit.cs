@@ -8,26 +8,19 @@ namespace WaveSurvivor {
     public enum Faction { Player, Enemy, Neutral }
 
     [RequireComponent(typeof(NavMeshAgent))]
-    public abstract class Unit : MonoBehaviour {
-        public Faction faction;
-
-        // ENCAPSULATION
-        public int Id { get { return id; } set { if (value >= 0) id = value; } }
+    public abstract class Unit : UnitData {     // INHERITANCE
+        public GameObject Indicator { get { return indicator; } private set { indicator = value; } }
+        public Dictionary<int, GameObject> targets = new Dictionary<int, GameObject>();
 
         public float speed;
         public float attackPower;
-        public float health;
         public float dectionRange;
         public float attackRange;
-        public GameObject Indicator { get { return indicator; } private set { indicator = value; } }
-        public Dictionary<int, GameObject> targets = new Dictionary<int, GameObject>();
 
         private GameObject target;
         private GameObject indicator;
         private SphereCollider dectectionColider;
         private NavMeshAgent nav_Agent;
-
-        private int id;
 
         private void Awake() {
             nav_Agent = GetComponent<NavMeshAgent>();
@@ -40,6 +33,7 @@ namespace WaveSurvivor {
         }
 
         private void Update() {
+            if (health <= 0) Destroy(gameObject);
             if (!target) return;
             float distanceFrom = Vector3.Distance(transform.position, target.transform.position);
             if (distanceFrom < attackRange) Attack();
@@ -68,8 +62,8 @@ namespace WaveSurvivor {
                 targets.Remove(OtherUnit.Id);
                 int index = 0;
                 if (targets.Count > 1) index = 1;
-                gameObject.GetComponent<EnemyController>().SwitchTargets(targets.ElementAt(index).Value);
-                target = targets.ElementAt(1).Value;
+                GetComponent<EnemyController>().SwitchTargets(targets.ElementAt(index).Value);
+                target = targets.ElementAt(index).Value;
             }
         }
 
@@ -79,7 +73,15 @@ namespace WaveSurvivor {
         }
 
         public virtual void Attack() {
-            Debug.Log("Attacking");
+            UnitData ourTarget = target.GetComponent<UnitData>();
+            ourTarget.health -= attackPower;
+            if (ourTarget.health <= 0) {
+                targets.Remove(ourTarget.Id);
+                int index = 0;
+                if (targets.Count > 1) index = 1;
+                GetComponent<EnemyController>().SwitchTargets(targets.ElementAt(index).Value);
+                target = targets.ElementAt(index).Value;
+            }
         }
     }
 }
