@@ -5,19 +5,17 @@ using UnityEngine;
 using UnityEngine.AI;
 
 namespace WaveSurvivor {
-    public enum Faction { Player, Enemy, Neutral }
-
     [RequireComponent(typeof(NavMeshAgent))]
     public abstract class Unit : UnitData {     // INHERITANCE
         public GameObject Indicator { get { return indicator; } private set { indicator = value; } }
-        public Dictionary<int, GameObject> targets = new Dictionary<int, GameObject>();
+        public Dictionary<int, UnitData> targets = new Dictionary<int, UnitData>();
 
         public float speed;
         public float attackPower;
         public float dectionRange;
         public float attackRange;
 
-        private GameObject target;
+        private UnitData target;
         private GameObject indicator;
         private SphereCollider dectectionColider;
         private NavMeshAgent nav_Agent;
@@ -36,18 +34,18 @@ namespace WaveSurvivor {
             if (health <= 0) Destroy(gameObject);
             if (!target) return;
             float distanceFrom = Vector3.Distance(transform.position, target.transform.position);
-            if (distanceFrom < attackRange) Attack();
+            if (distanceFrom < attackRange + target.offsetAttackRange) Attack();
         }
 
 
         private void OnTriggerEnter(Collider other) {
             //Debug.Log(other.gameObject.name);
 
-            Unit OtherUnit = other.gameObject.GetComponent<Unit>();
+            UnitData OtherUnit = other.gameObject.GetComponent<UnitData>();
             if (!OtherUnit) return;
             if (faction == Faction.Enemy && OtherUnit.faction == Faction.Player) {
                 if (targets.ContainsKey(OtherUnit.Id)) return;
-                targets.Add(OtherUnit.Id, other.gameObject);
+                targets.Add(OtherUnit.Id, OtherUnit);
                 gameObject.GetComponent<EnemyController>().SwitchTargets(targets.ElementAt(1).Value);
                 target = targets.ElementAt(1).Value;
             }
@@ -74,9 +72,13 @@ namespace WaveSurvivor {
 
         public virtual void Attack() {
             UnitData ourTarget = target.GetComponent<UnitData>();
+            Debug.Log(ourTarget.name);
             ourTarget.health -= attackPower;
             if (ourTarget.health <= 0) {
                 targets.Remove(ourTarget.Id);
+                target = null;
+                if (targets.Count == 0) return;
+
                 int index = 0;
                 if (targets.Count > 1) index = 1;
                 GetComponent<EnemyController>().SwitchTargets(targets.ElementAt(index).Value);

@@ -10,8 +10,9 @@ namespace WaveSurvivor {
 
         private void Awake() {
             unit = GetComponent<Unit>();
-            unit.targets.Add(-1, GameObject.Find("Base"));
-            direction = GameObject.Find("Base").transform.position;
+            GameObject _base = GameObject.Find("Base");
+            unit.targets.Add(-1, _base.GetComponent<UnitData>());
+            direction = _base.transform.position;
         }
 
         // Update is called once per frame
@@ -19,7 +20,7 @@ namespace WaveSurvivor {
             unit.GoTo(direction);
         }
 
-        public void SwitchTargets(GameObject _target) {
+        public void SwitchTargets(UnitData _target) {
             direction = _target.transform.position;
             unit.GoTo(direction);
         }
