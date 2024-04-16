@@ -18,9 +18,11 @@ namespace WaveSurvivor {
         public float attackPower;
         public float health;
         public float dectionRange;
+        public float attackRange;
         public GameObject Indicator { get { return indicator; } private set { indicator = value; } }
         public Dictionary<int, GameObject> targets = new Dictionary<int, GameObject>();
 
+        private GameObject target;
         private GameObject indicator;
         private SphereCollider dectectionColider;
         private NavMeshAgent nav_Agent;
@@ -37,14 +39,15 @@ namespace WaveSurvivor {
             dectectionColider.radius = dectionRange;
         }
 
-        // Update is called once per frame
-        void Update() {
-
+        private void Update() {
+            if (!target) return;
+            float distanceFrom = Vector3.Distance(transform.position, target.transform.position);
+            if (distanceFrom < attackRange) Attack();
         }
+
 
         private void OnTriggerEnter(Collider other) {
             //Debug.Log(other.gameObject.name);
-
 
             Unit OtherUnit = other.gameObject.GetComponent<Unit>();
             if (!OtherUnit) return;
@@ -52,12 +55,12 @@ namespace WaveSurvivor {
                 if (targets.ContainsKey(OtherUnit.Id)) return;
                 targets.Add(OtherUnit.Id, other.gameObject);
                 gameObject.GetComponent<EnemyController>().SwitchTargets(targets.ElementAt(1).Value);
+                target = targets.ElementAt(1).Value;
             }
         }
 
         private void OnTriggerExit(Collider other) {
             //Debug.Log(other.gameObject.name);
-
 
             Unit OtherUnit = other.gameObject.GetComponent<Unit>();
             if (!OtherUnit) return;
@@ -66,6 +69,7 @@ namespace WaveSurvivor {
                 int index = 0;
                 if (targets.Count > 1) index = 1;
                 gameObject.GetComponent<EnemyController>().SwitchTargets(targets.ElementAt(index).Value);
+                target = targets.ElementAt(1).Value;
             }
         }
 
@@ -74,6 +78,8 @@ namespace WaveSurvivor {
             nav_Agent.SetDestination(_target);
         }
 
-        public virtual void Attack() { }
+        public virtual void Attack() {
+            Debug.Log("Attacking");
+        }
     }
 }
