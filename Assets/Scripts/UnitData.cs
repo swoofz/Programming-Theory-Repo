@@ -6,11 +6,9 @@ namespace WaveSurvivor {
 
     public abstract class UnitData : MonoBehaviour {
         // ENCAPSULATION
-        public int Id { get { return id; } set { if (value >= 0) id = value; } }
+        public int id { get { return gameObject.GetInstanceID(); } }
         public Faction faction;
         public float health;
         public float offsetAttackRange;
-
-        private int id;
     }
 }

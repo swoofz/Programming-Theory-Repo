@@ -1,102 +1,88 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using Unity.VisualScripting;
-using UnityEditor;
+using System.Drawing;
+using System.IO;
 using UnityEngine;
 
 namespace WaveSurvivor {
     public class PlayerController : MonoBehaviour {
 
-        public Camera GameCam;
-        public RectTransform selector;
+        public class UnitActionData {
+            public Unit unit;
+            public UnitData target;
+            public Vector3 position;
+        }
 
-        private Dictionary<int, Unit> ourUnits;
+        public Camera GameCam;
+        public Selection selector;
+
+        private Dictionary<int, UnitActionData> ourUnits;
         private Dictionary<int, Unit> selectedUnits;
 
-        private RaycastHit selectionStartRay;
-        private RaycastHit selectionEndRay;
+        [SerializeField] private float distanceToTarget;
 
         private void Awake() {
-            ourUnits = new Dictionary<int, Unit>();
-            int index = 0;
-            foreach (Unit unit in FindObjectsOfType<Unit>()) { 
-                unit.Id = index;
-                ourUnits.Add(unit.Id, unit);
-                index++;
+            ourUnits = new Dictionary<int, UnitActionData>();
+            foreach (Unit unit in FindObjectsOfType<Unit>()) {
+                UnitActionData unitData = CreateUnitActionData(unit, unit.transform.position);
+                ourUnits.Add(unit.id, unitData);
             }
             selectedUnits = new Dictionary<int, Unit>();
-            ResetSelectionPosition();
         }
 
         void Update() {
-            Vector2 intialPosition = Vector3.zero;
-            if (Input.GetMouseButtonDown(0)) { 
-                selectionStartRay = RayFromMouse();
-                intialPosition = Input.mousePosition;
-            }
-            if (Input.GetMouseButtonUp(0)) { selectionEndRay = RayFromMouse(); }
+            bool clickedToMove = Input.GetMouseButtonDown(1) && selectedUnits.Count > 0;
+            if (clickedToMove) MoveTo(selector.GetPoint(GameCam));
 
-            HandleSelection();
+            MoveUnits();
 
-            if (Input.GetMouseButtonDown(1) && selectedUnits.Count > 0) {
-                Ray ray = GameCam.ScreenPointToRay(Input.mousePosition);
-                RaycastHit hit;
-
-                if (Physics.Raycast(ray, out hit)) {
-                    foreach (Unit unit in selectedUnits.Values) {
-                        unit.GoTo(hit.point);
-                    }
-                }
-            }
-
+            if (Input.GetMouseButtonUp(0)) HandleSelection();
             if (Input.GetKeyDown(KeyCode.Escape)) ClearSelection();
         }
 
+        private void HandleSelection() {
+            if (selector.RaysAreTheSame(GameCam)) { // CLICK
+                Unit hitUnit = selector.GetClickedTarget(GameCam).GetComponent<Unit>();
 
-        private RaycastHit RayFromMouse() {
-            Ray ray = GameCam.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit)) { return hit; }
-            return hit;
-        }
+                if (hitUnit == null) { ClearSelection(); return; }
+                if (selectedUnits.ContainsKey(hitUnit.id)) return;
 
-        private void DragSelect() {
-            if (SelectionIsReset()) return;
-
-            bool foundUnit = false;
-            foreach (Unit unit in ourUnits.Values) {
-                Vector3 unitPosition = unit.transform.position;
-                Vector3 startPosition = selectionStartRay.point;
-                Vector3 endPosition = selectionEndRay.point;
-
-                if (IsInsideBoundary(startPosition.x, endPosition.x, unitPosition.x) &&
-                    IsInsideBoundary(startPosition.z, endPosition.z, unitPosition.z)) {
-
-                    if (selectedUnits.ContainsKey(unit.Id)) continue;
-                    selectedUnits.Add(unit.Id, unit);
-                    unit.Indicator.SetActive(true);
-                    foundUnit = true;
-                }
+                hitUnit.Indicator.SetActive(true);
+                selectedUnits.Add(hitUnit.id, hitUnit);
+                return;
             }
 
-            float dragDistance = Vector3.Distance(selectionStartRay.point, selectionEndRay.point);
-            if (dragDistance < 5f && !foundUnit) ClearSelection();    // Basically click but showed as drag
+            // DRAG
+            bool foundUnit = false;
+            foreach (UnitActionData unitData in ourUnits.Values) {
+                if (!selector.Drag(GameCam, unitData.unit.transform.position)) continue;
+                if (selectedUnits.ContainsKey(unitData.unit.id)) continue;
+                selectedUnits.Add(unitData.unit.id, unitData.unit);
+                unitData.unit.Indicator.SetActive(true);
+                foundUnit = true;
+            }
 
-            ResetSelectionPosition();
+            float dragDistance = selector.GetDragDistance();
+            if (dragDistance < 5f && !foundUnit) ClearSelection();    // Basically click but showed as drag
         }
 
-        private void ClickSelect() {
-            if (SelectionIsReset()) return;
-            Unit hitUnit = selectionEndRay.collider.GetComponent<Unit>();
 
-            if (hitUnit != null) {
-                if (selectedUnits.ContainsKey(hitUnit.Id)) return;
-                hitUnit.Indicator.SetActive(true);
-                selectedUnits.Add(hitUnit.Id, hitUnit);
-            } else ClearSelection();
+        private void MoveUnits() {
+            foreach (int key in ourUnits.Keys) {
+                UnitActionData unitData = ourUnits[key];
+                if (!unitData.unit) ourUnits.Remove(key);
 
-            ResetSelectionPosition();
+                float distance = Vector3.Distance(unitData.unit.transform.position, unitData.position);
+                float range = distanceToTarget;
+                if (unitData.target) range += unitData.unit.attackRange;
+
+                if (distance > range) unitData.unit.GoTo(unitData.position);
+                else if (unitData.target) unitData.unit.Attack(unitData.target);
+            }
+        }
+
+        private void MoveTo(Vector3 point) {
+            foreach (Unit unit in selectedUnits.Values) { ourUnits[unit.id].position = point; }
         }
 
         private void ClearSelection() {
@@ -104,32 +90,8 @@ namespace WaveSurvivor {
             selectedUnits.Clear();
         }
 
-        private void HandleSelection() {
-            if (selectionStartRay.point == selectionEndRay.point) {
-                ClickSelect();
-                return;
-            }
-
-            DragSelect();
-        }
-
-        private bool IsInsideBoundary(float start, float end, float middle) {
-            if (
-                (start > middle && middle > end) ||
-                (start < middle && middle < end)
-                ) return true;
-
-            return false;
-        }
-
-        private void ResetSelectionPosition() {
-            selectionStartRay = new RaycastHit() { point = Vector3.down };
-            selectionEndRay = new RaycastHit() { point = Vector3.down };
-        }
-
-        private bool SelectionIsReset() {
-            return (selectionEndRay.point == Vector3.down ||
-                selectionStartRay.point == Vector3.down);
+        private UnitActionData CreateUnitActionData(Unit unit, Vector3 position) {
+            return new UnitActionData() { unit = unit, target = null, position = position };
         }
     }
 }

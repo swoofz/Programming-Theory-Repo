@@ -1,13 +1,17 @@
 ﻿using System.Collections;
-using System.Xml.Schema;
-using Unity.VisualScripting;
 using UnityEngine;
 
 namespace WaveSurvivor {
     public class Selection : MonoBehaviour {
 
+        // View Varibles
         private RectTransform m_RectTransform;
         private Vector2 m_offset;
+
+        // Game Selection Varibles
+        private RaycastHit startRay;
+        private RaycastHit endRay;
+        private Vector3 initalPosition;
 
         private void Awake() {
             m_RectTransform = GetComponent<RectTransform>();
@@ -15,7 +19,7 @@ namespace WaveSurvivor {
             ResetSelection();
         }
 
-        // Update is called once per frame
+        
         void Update() {
             if (IsSelecting()) return;
 
@@ -23,9 +27,11 @@ namespace WaveSurvivor {
             m_RectTransform.anchoredPosition = (Vector2)Input.mousePosition - m_offset;
         }
 
+
         // ABSTRACTION
         private bool IsSelecting() {
             if (!Input.GetMouseButton(0)) return false;
+            if (Input.GetMouseButtonDown(0)) initalPosition = Input.mousePosition;
 
             Vector2 startPosition = m_RectTransform.anchoredPosition;
             Vector2 mousePosition = (Vector2)Input.mousePosition - m_offset;
@@ -57,5 +63,34 @@ namespace WaveSurvivor {
             m_RectTransform.pivot = new Vector2(0.5f, 0.5f);
             m_RectTransform.sizeDelta = new Vector2(1f, 1f);
         }
+
+        private bool IsInsideBoundary(float start, float end, float obj) {
+            if ((start > obj && obj > end) || (start < obj && obj < end)) 
+                return true;
+
+            return false;
+        }
+
+        private RaycastHit GetRay(Camera camera, Vector3 position) {
+            Ray ray = camera.ScreenPointToRay(position);
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit)) { return hit; }
+            return hit;
+        }
+
+        public bool Drag(Camera cam, Vector3 objPosition) {
+            startRay = GetRay(cam, initalPosition);
+            endRay = GetRay(cam, Input.mousePosition);
+
+            bool xInside = IsInsideBoundary(startRay.point.x, endRay.point.x, objPosition.x);
+            bool yInside = IsInsideBoundary(startRay.point.z, endRay.point.z, objPosition.z);
+
+            return xInside && yInside;
+        }
+
+        public bool RaysAreTheSame(Camera cam) { return GetRay(cam, initalPosition).point == GetRay(cam, Input.mousePosition).point; }
+        public GameObject GetClickedTarget(Camera cam) { return GetRay(cam, Input.mousePosition).collider.gameObject; }
+        public float GetDragDistance() { return Vector3.Distance(startRay.point, endRay.point); }
+        public Vector3 GetPoint(Camera cam) { return GetRay(cam, Input.mousePosition).point; }
     }
 }
