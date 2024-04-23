@@ -1,14 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
 using UnityEngine;
 
 namespace WaveSurvivor {
     public class PlayerController : MonoBehaviour {
 
         public class UnitActionData {
-            public Unit unit;
+            public UnitData unit;
             public UnitData target;
             public Vector3 position;
         }
@@ -18,19 +16,20 @@ namespace WaveSurvivor {
 
         private Dictionary<int, UnitActionData> ourUnits;
         private Dictionary<int, Unit> selectedUnits;
+        private UnitData selectedBuilding;
 
         [SerializeField] private float distanceToTarget;
 
         private void Awake() {
             ourUnits = new Dictionary<int, UnitActionData>();
             foreach (Unit unit in FindObjectsOfType<Unit>()) {
-                UnitActionData unitData = CreateUnitActionData(unit, unit.transform.position);
-                ourUnits.Add(unit.id, unitData);
+                if (unit.faction != Faction.Player) continue;
+                AddUnit(unit, unit.transform.position);
             }
             selectedUnits = new Dictionary<int, Unit>();
         }
 
-        void Update() {
+        private void LateUpdate() {
             bool clickedToMove = Input.GetMouseButtonDown(1) && selectedUnits.Count > 0;
             if (clickedToMove) MoveTo(selector.GetPoint(GameCam));
 
@@ -42,23 +41,27 @@ namespace WaveSurvivor {
 
         private void HandleSelection() {
             if (selector.RaysAreTheSame(GameCam)) { // CLICK
-                Unit hitUnit = selector.GetClickedTarget(GameCam).GetComponent<Unit>();
+                ClearSelection();
+                UnitData hitUnit = selector.GetClickedTarget(GameCam).GetComponent<UnitData>();
+                if (hitUnit == null) return;
 
-                if (hitUnit == null) { ClearSelection(); return; }
-                if (selectedUnits.ContainsKey(hitUnit.id)) return;
-
+                Unit unit = hitUnit.GetComponent<Unit>();
+                if(unit) selectedUnits.Add(hitUnit.id, unit);
+                else selectedBuilding = hitUnit;
                 hitUnit.Indicator.SetActive(true);
-                selectedUnits.Add(hitUnit.id, hitUnit);
                 return;
             }
 
             // DRAG
             bool foundUnit = false;
             foreach (UnitActionData unitData in ourUnits.Values) {
+                if (!unitData.unit.GetComponent<Unit>()) continue;
                 if (!selector.Drag(GameCam, unitData.unit.transform.position)) continue;
                 if (selectedUnits.ContainsKey(unitData.unit.id)) continue;
-                selectedUnits.Add(unitData.unit.id, unitData.unit);
-                unitData.unit.Indicator.SetActive(true);
+
+                Unit unit = unitData.unit.GetComponent<Unit>();
+                selectedUnits.Add(unitData.unit.id, unit);
+                unit.Indicator.SetActive(true);
                 foundUnit = true;
             }
 
@@ -68,16 +71,25 @@ namespace WaveSurvivor {
 
 
         private void MoveUnits() {
+            List<int> ids = new List<int>();
             foreach (int key in ourUnits.Keys) {
                 UnitActionData unitData = ourUnits[key];
-                if (!unitData.unit) ourUnits.Remove(key);
+                if (!unitData.unit) { ids.Add(key); continue; }
 
-                float distance = Vector3.Distance(unitData.unit.transform.position, unitData.position);
-                float range = distanceToTarget;
-                if (unitData.target) range += unitData.unit.attackRange;
+                Unit unit = unitData.unit.GetComponent<Unit>();
+                if (!unit) continue;
 
-                if (distance > range) unitData.unit.GoTo(unitData.position);
-                else if (unitData.target) unitData.unit.Attack(unitData.target);
+                bool isMoving = !unit.IsInRange(unitData.position, distanceToTarget);
+                if (isMoving) unit.GoTo(unitData.position);
+                else {
+                    unitData.position = unit.transform.position;
+                    TryAttacking(unit.FindTarget(0), unit);
+                }
+            }
+
+            foreach (int id in ids) {
+                ourUnits.Remove(id);
+                if(selectedUnits.ContainsKey(id)) selectedUnits.Remove(id);
             }
         }
 
@@ -85,13 +97,30 @@ namespace WaveSurvivor {
             foreach (Unit unit in selectedUnits.Values) { ourUnits[unit.id].position = point; }
         }
 
+        private void TryAttacking(UnitData target, Unit unit) {
+            if (!target) return;
+
+            bool targetInRange = unit.IsInRange(target);
+            if (!targetInRange) { unit.GoTo(target); }
+            if (targetInRange) unit.Attack(target);
+        }
+
         private void ClearSelection() {
+            Debug.Log(selectedUnits.Count);
             foreach (Unit unit in selectedUnits.Values) unit.Indicator.SetActive(false);
+            if(selectedBuilding) selectedBuilding.Indicator.SetActive(false);
+            selectedBuilding = null;
             selectedUnits.Clear();
         }
 
-        private UnitActionData CreateUnitActionData(Unit unit, Vector3 position) {
-            return new UnitActionData() { unit = unit, target = null, position = position };
+        public void SpawnUnit(GameObject unitPrefab) {
+            GameObject clone = Instantiate(unitPrefab);
+            clone.GetComponent<Unit>().faction = Faction.Player;
+        }
+
+        public void AddUnit(Unit unit, Vector3 position) {
+            UnitActionData data = new UnitActionData() { unit = unit, target = null, position = position };
+            ourUnits.Add(unit.id, data);
         }
     }
 }

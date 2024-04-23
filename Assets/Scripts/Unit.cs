@@ -3,15 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
-using static UnityEngine.GraphicsBuffer;
 
 namespace WaveSurvivor {
     [RequireComponent(typeof(NavMeshAgent))]
     public abstract class Unit : UnitData {     // INHERITANCE
 
-        // ENCAPSULATION
-        public GameObject Indicator { get { return indicator; } private set { indicator = value; } }
-        public int LastTarget { get { return lastTargetId; } }
         public Dictionary<int, UnitData> targets = new Dictionary<int, UnitData>();
 
         public float speed;
@@ -19,19 +15,15 @@ namespace WaveSurvivor {
         public float dectionRange;
         public float attackRange;
 
-        private int lastTargetId = -1;
-        private GameObject indicator;
         private SphereCollider dectectionColider;
         private NavMeshAgent nav_Agent;
 
-        private void Awake() {
+        // POLYMORPHISM
+        protected override void OurAwake() {
             nav_Agent = GetComponent<NavMeshAgent>();
             dectectionColider = GetComponent<SphereCollider>();
-
-            if(gameObject.tag == "Ally")
-                indicator = transform.Find("Indicator").gameObject;
-
             dectectionColider.radius = dectionRange;
+            base.OurAwake();
         }
 
         private void Update() { if (health <= 0) Destroy(gameObject); }
@@ -39,26 +31,49 @@ namespace WaveSurvivor {
         private void OnTriggerEnter(Collider other) {
             UnitData otherUnit = other.gameObject.GetComponent<UnitData>();
             if (!otherUnit) return;
+            if (otherUnit.faction == Faction.Neutral) return;
             if (targets.ContainsKey(otherUnit.id) || faction == otherUnit.faction) return;
             AddTarget(otherUnit);
         }
 
+        private void OnTriggerExit(Collider other) {
+            if (faction != Faction.Player) return;
+            UnitData otherUnit = other.gameObject.GetComponent<UnitData>();
+            if (!otherUnit) return;
+            if (faction == otherUnit.faction) return;
+            targets.Remove(otherUnit.id);
+        }
 
-        public virtual void GoTo(Vector3 _target) {
-            transform.LookAt(_target);
-            Vector3 direction = _target - transform.position;
-            transform.position += (direction.normalized * speed * Time.deltaTime);
+
+        public virtual void GoTo(Vector3 target) {
+            transform.LookAt(target);
+            nav_Agent.speed = speed;
+            nav_Agent.SetDestination(target);
         }
 
         public virtual void GoTo(UnitData unit) {
-            lastTargetId = unit.id;
-            transform.LookAt(unit.transform);
-            Vector3 direction = unit.transform.position - transform.position;
-            transform.position += (direction.normalized * speed * Time.deltaTime);
+            transform.LookAt(unit.transform.position);
+            nav_Agent.speed = speed;
+            nav_Agent.SetDestination(unit.transform.position);
         }
 
         public virtual void Attack(UnitData target) {
             target.health -= attackPower;
+        }
+
+        public bool IsInRange(Vector3 target, float offset) {
+            float distance = Vector3.Distance(transform.position, target);
+            if (distance < offset) return true;
+
+            return false;
+        }
+
+        public bool IsInRange(UnitData target) {
+            float distance = Vector3.Distance(transform.position, target.transform.position);
+            //Debug.Log(distance);
+            if (distance < offsetAttackRange + attackRange) return true;
+
+            return false;
         }
 
         public void AddTarget(UnitData unit) {

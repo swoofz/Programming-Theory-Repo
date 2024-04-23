@@ -21,7 +21,7 @@ namespace WaveSurvivor {
             if (!target) return;
 
             float distanceFrom = Vector3.Distance(transform.position, target.transform.position);
-            if (distanceFrom < unit.attackRange + target.offsetAttackRange) unit.Attack(target);
+            if (distanceFrom < unit.attackRange + target.offsetAttackRange) unit.Attack(target); 
             else unit.GoTo(target);
         }
 
