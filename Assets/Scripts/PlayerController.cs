@@ -13,6 +13,8 @@ namespace WaveSurvivor {
 
         public Camera GameCam;
         public Selection selector;
+        // Delect just for testing rn
+        public SpawnManager spawnManager;
 
         private Dictionary<int, UnitActionData> ourUnits;
         private Dictionary<int, Unit> selectedUnits;
@@ -27,6 +29,10 @@ namespace WaveSurvivor {
                 AddUnit(unit, unit.transform.position);
             }
             selectedUnits = new Dictionary<int, Unit>();
+        }
+
+        private void Update() {
+            if (Input.GetKeyDown(KeyCode.Space)) StartCoroutine(spawnManager.SpawnEnemy(3, 0, 1));
         }
 
         private void LateUpdate() {
@@ -106,7 +112,6 @@ namespace WaveSurvivor {
         }
 
         private void ClearSelection() {
-            Debug.Log(selectedUnits.Count);
             foreach (Unit unit in selectedUnits.Values) unit.Indicator.SetActive(false);
             if(selectedBuilding) selectedBuilding.Indicator.SetActive(false);
             selectedBuilding = null;

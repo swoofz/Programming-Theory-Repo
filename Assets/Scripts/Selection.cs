@@ -1,8 +1,11 @@
 ﻿using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace WaveSurvivor {
     public class Selection : MonoBehaviour {
+
 
         // View Varibles
         private RectTransform m_RectTransform;
@@ -16,11 +19,13 @@ namespace WaveSurvivor {
         private void Awake() {
             m_RectTransform = GetComponent<RectTransform>();
             m_offset = new Vector2(Screen.width, Screen.height) / 2;
+
             ResetSelection();
         }
 
         
         void Update() {
+            if(EventSystem.current.IsPointerOverGameObject() && EventSystem.current.currentSelectedGameObject) return;
             if (IsSelecting()) return;
 
             if (Input.GetMouseButtonUp(0)) ResetSelection();
@@ -37,6 +42,7 @@ namespace WaveSurvivor {
             Vector2 mousePosition = (Vector2)Input.mousePosition - m_offset;
             Vector2 mouseOffset = mousePosition - startPosition;
 
+            m_RectTransform.gameObject.GetComponent<Image>().enabled = true;
             m_RectTransform.pivot = GetPivot(mouseOffset);
             m_RectTransform.sizeDelta = new Vector2(Mathf.Abs(mouseOffset.x), Mathf.Abs(mouseOffset.y));
             return true;
@@ -62,6 +68,7 @@ namespace WaveSurvivor {
         private void ResetSelection() {
             m_RectTransform.pivot = new Vector2(0.5f, 0.5f);
             m_RectTransform.sizeDelta = new Vector2(1f, 1f);
+            m_RectTransform.gameObject.GetComponent<Image>().enabled = false;
         }
 
         private bool IsInsideBoundary(float start, float end, float obj) {

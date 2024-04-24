@@ -16,7 +16,9 @@ namespace WaveSurvivor {
 
         private void Awake() { OurAwake(); }
 
-        protected virtual void OurAwake() {
+        protected virtual void OurAwake() { }
+
+        public void FindIndicator() {
             if (faction == Faction.Player)
                 indicator = transform.Find("Indicator").gameObject;
         }
