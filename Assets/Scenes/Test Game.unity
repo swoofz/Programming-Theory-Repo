@@ -169,7 +169,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68f8668b6ed803a488b591c0a3dc1d75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitPrefabs: []
+  unitPrefabs:
+  - {fileID: 1803466496551649261, guid: 19095c543d0be7e44aaa3776f643d028, type: 3}
   xBounds: 20
   zBounds: 20
 --- !u!1 &102061151
@@ -2228,6 +2229,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   GameCam: {fileID: 883984745}
   selector: {fileID: 1258759263}
+  spawnManager: {fileID: 96528149}
   distanceToTarget: 1
 --- !u!1 &1584578124
 GameObject:

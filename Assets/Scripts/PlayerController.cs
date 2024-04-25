@@ -118,11 +118,6 @@ namespace WaveSurvivor {
             selectedUnits.Clear();
         }
 
-        public void SpawnUnit(GameObject unitPrefab) {
-            GameObject clone = Instantiate(unitPrefab);
-            clone.GetComponent<Unit>().faction = Faction.Player;
-        }
-
         public void AddUnit(Unit unit, Vector3 position) {
             UnitActionData data = new UnitActionData() { unit = unit, target = null, position = position };
             ourUnits.Add(unit.id, data);

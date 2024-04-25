@@ -6,7 +6,6 @@ using UnityEngine.UI;
 namespace WaveSurvivor {
     public class Selection : MonoBehaviour {
 
-
         // View Varibles
         private RectTransform m_RectTransform;
         private Vector2 m_offset;

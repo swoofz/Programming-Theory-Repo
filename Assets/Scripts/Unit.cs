@@ -45,6 +45,7 @@ namespace WaveSurvivor {
         }
 
 
+        // POLYMORPHISM
         public virtual void GoTo(Vector3 target) {
             transform.LookAt(target);
             nav_Agent.speed = speed;
@@ -70,7 +71,6 @@ namespace WaveSurvivor {
 
         public bool IsInRange(UnitData target) {
             float distance = Vector3.Distance(transform.position, target.transform.position);
-            //Debug.Log(distance);
             if (distance < offsetAttackRange + attackRange) return true;
 
             return false;

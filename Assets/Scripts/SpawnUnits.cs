@@ -22,7 +22,8 @@ namespace WaveSurvivor {
             else if (faction == Faction.Player) {
                 AddIndicator(clone);
                 PlayerController player = FindObjectOfType<PlayerController>();
-                player.AddUnit(clone.GetComponent<Unit>(), clone.transform.position);
+                Vector3 position = SetGoToOnSpawn(clone.transform.position, 5);
+                player.AddUnit(clone.GetComponent<Unit>(), position);
             }
         }
 
@@ -31,6 +32,12 @@ namespace WaveSurvivor {
             clone.transform.SetParent(parent.transform, false);
             clone.name = "Indicator";
             parent.GetComponent<UnitData>().FindIndicator();
+        }
+
+        private Vector3 SetGoToOnSpawn(Vector3 position, float offset) {
+            float x = position.x + Random.Range(-offset, offset);
+            float z = position.z - offset;
+            return new Vector3(x, position.y, z);
         }
     }
 }
